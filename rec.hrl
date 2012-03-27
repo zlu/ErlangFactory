@@ -1,0 +1,2 @@
+-record(person, {name, location}).
+
