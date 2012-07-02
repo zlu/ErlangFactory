@@ -81,32 +81,38 @@ init([Port]) ->
     {ok, #state{port = Port, lsock = LSock}, 0}.
 
 handle_call(get_count, _From, State) ->
+io_lib:format("in handle_call~n",[]),
     {reply, {ok, State#state.request_count}, State}.
 
 handle_cast(stop, State) ->
+io_lib:format("in handle_cast~n",[]),
     {stop, normal, State}.
 
 handle_info({tcp, Socket, RawData}, State) ->
+io_lib:format("in handle_info/2~n",[]),
     do_rpc(Socket, RawData),
     RequestCount = State#state.request_count,
     {noreply, State#state{request_count = RequestCount + 1}};
 handle_info(timeout, #state{lsock = LSock} = State) ->
+io_lib:format("in handle_info/timeout~n",[]),
     {ok, _Sock} = gen_tcp:accept(LSock),
     {noreply, State}.
 
 terminate(_Reason, _State) ->
+io_lib:format("in terminate~n",[]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
+io_lib:format("in code_change~n",[]),
     {ok, State}.
 
 %%%----------------------------------------------------------------------
 %%% Internal functions
 %%%----------------------------------------------------------------------
 
-do_rpc(Socket, RawData) ->
+do_rpc(Socket, RawData) ->    
     try
-	{M, F, A} = split_out_mfa(RawData),
+	{M, F, A} = split_out_mfa(RawData, Socket),
 	Result = apply(M, F, A),
 	gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result]))
     catch
@@ -114,11 +120,11 @@ do_rpc(Socket, RawData) ->
 	    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Err]))
     end.
 
-split_out_mfa(RawData) ->
+split_out_mfa(RawData, Socket) ->
     MFA = re:replace(RawData, "\r\n$", "", [{return, list}]),
     {match, [M, F, A]} =
 	re:run(MFA,
-	       "(.*):.*)\S*\\)\S*.\S*$",
+	       "(.*):(.*)\s*\\((.*)\s*\\)\s*.\s*$",
 	       [{capture, [1,2,3], list}, ungreedy]),
     {list_to_atom(M), list_to_atom(F), args_to_terms(A)}.
 
