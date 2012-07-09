@@ -49,7 +49,7 @@
 start_link(Port) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Port], []).
 
-%% @spec start_link() => {ok, Pid}
+%% @spec start_link() -> {ok, Pid}
 %% @doc Calls `start_link(Port)' using the default port.
 start_link() ->
     start_link(?DEFAULT_PORT).
@@ -112,7 +112,7 @@ io_lib:format("in code_change~n",[]),
 
 do_rpc(Socket, RawData) ->    
     try
-	{M, F, A} = split_out_mfa(RawData, Socket),
+	{M, F, A} = split_out_mfa(RawData),
 	Result = apply(M, F, A),
 	gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result]))
     catch
@@ -120,7 +120,7 @@ do_rpc(Socket, RawData) ->
 	    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Err]))
     end.
 
-split_out_mfa(RawData, Socket) ->
+split_out_mfa(RawData) ->
     MFA = re:replace(RawData, "\r\n$", "", [{return, list}]),
     {match, [M, F, A]} =
 	re:run(MFA,
