@@ -11,7 +11,7 @@ sum(N) -> N + sum(N-1).
 sum_interval(N, M) when N =< M ->
     sum(M) - sum(N) + N.
 
-create(N) when N > 0 -> 
+create(N) when N > 0   -> 
     create(N, []).
 create(1, Accumulator) -> 
     [1 | Accumulator];
